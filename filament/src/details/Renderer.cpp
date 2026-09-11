@@ -834,7 +834,8 @@ void FRenderer::renderJob(DriverApi& driver, LinearAllocatorArena& arena, FView&
             .asSubpass =
                     isSubpassPossible &&
                     mIsFrameBufferFetchSupported &&
-                    !engine.debug.renderer.disable_subpasses,
+                    !engine.debug.renderer.disable_subpasses &&
+                    !getenv("ORBIS_DIAG_NO_SUBPASS"), // ORBIS-DIAG (temporary)
             .customResolve =
                     msaaSampleCount > 1 &&
                     mIsFrameBufferFetchMultiSampleSupported &&

@@ -268,6 +268,12 @@ void RenderPass::appendCustomCommand(Command* commands,
     cmd |= uint64_t(order) << CUSTOM_ORDER_SHIFT;
     cmd |= uint64_t(index);
 
+    // ORBIS-DIAG (temporary): A/B the stale `info` of custom commands.
+    static bool const sZeroInfo = getenv("ORBIS_DIAG_ZERO_CUSTOM_INFO") != nullptr;
+    if (sZeroInfo) {
+        commands->info = {};
+    }
+
     commands->key = cmd;
 }
 
@@ -329,6 +335,19 @@ RenderPass::Command* RenderPass::instanceify(
 
         uint32_t const instanceCount = std::distance(begin, end);
         drawCallsSavedCount += instanceCount - 1;
+
+        // ORBIS-DIAG (temporary, not part of the fix): report any merged run that contains a
+        // custom command -- those are not draws, and their `info` is never written.
+        for (uint32_t i = 0; i < instanceCount; i++) {
+            if ((begin[i].key & CUSTOM_MASK) != uint64_t(CustomCommand::PASS)) {
+                slog.w << "ORBIS-DIAG instanceify: run of " << instanceCount
+                       << " swallows custom command #" << i
+                       << " key=" << io::hex << begin[i].key
+                       << " first key=" << begin[0].key << io::dec
+                       << " stale index=" << begin[i].info.index
+                       << " (renderables=" << mRenderableSoa.size() << ")" << io::endl;
+            }
+        }
 
         if (UTILS_UNLIKELY(stagingBuffer.empty())) {
             stagingBuffer.resize(count);
