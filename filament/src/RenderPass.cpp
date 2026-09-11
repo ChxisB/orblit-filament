@@ -306,6 +306,17 @@ RenderPass::Command* RenderPass::instanceify(
 
     auto equivalent = [](Command const& lhs, Command const& rhs) {
         // This predicate must also filter out commands that are not eligible for auto-instancing.
+
+        // Only draw commands can be instanced. Custom commands (e.g. the color-grading subpass,
+        // fog, or a per-channel depth clear) are not draws: appendCustomCommand() only writes
+        // their key, so their `info` is uninitialized -- in practice a stale copy of a draw left
+        // in the arena by an earlier pass or frame. If it happened to match the adjacent draw,
+        // the custom command was folded into that draw's instanced run and never executed
+        // (losing the color-grading subpass leaves the whole frame black).
+        if (UTILS_UNLIKELY((lhs.key & CUSTOM_MASK) != uint64_t(CustomCommand::PASS) ||
+                           (rhs.key & CUSTOM_MASK) != uint64_t(CustomCommand::PASS))) {
+            return false;
+        }
         if (UTILS_UNLIKELY(lhs.info.hasSkinning || lhs.info.hasMorphing || lhs.info.instanceCount > 1)) {
             return false;
         }
