@@ -1095,7 +1095,13 @@ void GLSLPostProcessor::registerPerformancePasses(Optimizer& optimizer, Config c
     RegisterPass(CreateWrapOpKillPass());
     RegisterPass(CreateDeadBranchElimPass());
     RegisterPass(CreateMergeReturnPass(), MaterialBuilder::TargetApi::METAL);
-    RegisterPass(CreateInlineExhaustivePass());
+    // Exhaustive inlining can hoist an OpSampledImage out of the block that
+    // consumes it. Vulkan and the native backends accept that form, but
+    // Tint's WebGPU validation correctly rejects it.
+    RegisterPass(CreateInlineExhaustivePass(),
+            MaterialBuilder::TargetApi::OPENGL |
+            MaterialBuilder::TargetApi::VULKAN |
+            MaterialBuilder::TargetApi::METAL);
     RegisterPass(CreateCompactIdsPass());
     RegisterPass(CreateAggressiveDCEPass());
     RegisterPass(CreatePrivateToLocalPass());
@@ -1119,7 +1125,15 @@ void GLSLPostProcessor::registerPerformancePasses(Optimizer& optimizer, Config c
     RegisterPass(CreateDeadInsertElimPass());
     RegisterPass(CreateDeadBranchElimPass());
     RegisterPass(CreateSimplificationPass(), MaterialBuilder::TargetApi::METAL);
-    RegisterPass(CreateIfConversionPass());
+
+    // If-conversion can hoist an OpSampledImage out of the block that
+    // consumes it. Vulkan and the native backends accept that form, but
+    // Tint's WebGPU validation correctly rejects it. Keep the control flow
+    // intact for WGSL; the later WebGPU sampler-splitting pass still runs.
+    RegisterPass(CreateIfConversionPass(),
+            MaterialBuilder::TargetApi::OPENGL |
+            MaterialBuilder::TargetApi::VULKAN |
+            MaterialBuilder::TargetApi::METAL);
     RegisterPass(CreateCopyPropagateArraysPass());
     RegisterPass(CreateReduceLoadSizePass());
     RegisterPass(CreateAggressiveDCEPass());
