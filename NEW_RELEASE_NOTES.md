@@ -6,6 +6,5 @@
 appropriate header in [RELEASE_NOTES.md](./RELEASE_NOTES.md).
 
 ## Release notes for next branch cut
-- filament: fix GCC compilation of the NEON color grading path
-- materials: add `iridescence`, `iridescenceIor` and `iridescenceThickness` to the lit shading models
-- filamat: convert DIR variant into a specialization constant. [⚠️ **Recompile Materials**]
+- build: Keep exceptions enabled for separately built host tools when `build.sh -E` disables exceptions for the target build.
+- vulkan: report depth and stencil render-target format support correctly
